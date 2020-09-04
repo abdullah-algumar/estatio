@@ -8,17 +8,24 @@ import javax.inject.Inject;
 import org.apache.isis.applib.annotation.DomainService;
 import org.apache.isis.applib.annotation.NatureOfService;
 
+import org.estatio.module.application.spiimpl.pdfadvisor.PdfAdvisorForEstatio;
 import org.isisaddons.module.security.dom.tenancy.HasAtPath;
+import org.isisaddons.module.security.dom.user.ApplicationUser;
 import org.isisaddons.module.security.dom.user.ApplicationUserRepository;
 
 import org.estatio.module.party.dom.Person;
 import org.estatio.module.party.dom.PersonRepository;
 import org.estatio.module.party.dom.role.PartyRoleMemberInferenceServiceAbstract;
 import org.estatio.module.party.dom.role.PartyRoleTypeEnum;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 @DomainService(nature = NatureOfService.DOMAIN)
 public class PartyRoleMemberInferenceServiceForPartyRoleAndHasAtPath
         extends PartyRoleMemberInferenceServiceAbstract<PartyRoleTypeEnum, HasAtPath> {
+
+    public static final Logger LOG = LoggerFactory.getLogger(PartyRoleMemberInferenceServiceForPartyRoleAndHasAtPath.class);
 
     public PartyRoleMemberInferenceServiceForPartyRoleAndHasAtPath() {
         super(HasAtPath.class, PartyRoleTypeEnum.class);
@@ -31,6 +38,12 @@ public class PartyRoleMemberInferenceServiceForPartyRoleAndHasAtPath
         // infer the country / "org unit" from the document
         String atPath = hasAtPath.getAtPath();
         List<Person> personsWithRoleType = doInferMembersOf(partyRoleType);
+
+        for (Person person : personRepository.findWithUsername()) {
+            if (applicationUserRepository.findByUsername(person.getUsername()) == null) {
+                LOG.warn(String.format("Username %s could not be found for Person with reference %s", person.getUsername(), person.getReference()));
+            }
+        }
 
         return personRepository.findWithUsername()
                 .stream()
